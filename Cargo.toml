@@ -1,0 +1,9 @@
+[package]
+name = "api-ai"
+version = "0.1.0"
+authors = ["Benny Klotz <benny.klotz92@gmail.com>"]
+
+[dependencies]
+
+serde_json = "0.9.8"
+reqwest = "0.4.0"
