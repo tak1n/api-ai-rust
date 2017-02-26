@@ -1,19 +1,16 @@
 use std::collections::HashMap;
-use serde_json;
 use serde_json::{Map, Value};
-use reqwest::{Client as HttpClient, RequestBuilder};
-use reqwest::Response;
+use reqwest::Client as HttpClient;
 use reqwest::header::Authorization;
-use std::io::Read;
 
-struct Client<'a> {
+pub struct Client<'a> {
     client_access_token: &'a str,
     api_lang: &'a str,
     session_id: &'a str,
 }
 
 impl<'a> Client<'a> {
-    fn new(client_access_token: &'a str, api_lang: &'a str, session_id: &'a str) -> Client<'a> {
+    pub fn new(client_access_token: &'a str, api_lang: &'a str, session_id: &'a str) -> Client<'a> {
         Client {
             client_access_token: client_access_token,
             api_lang: api_lang,
@@ -21,7 +18,7 @@ impl<'a> Client<'a> {
         }
     }
 
-    fn text_request(&self,
+    pub fn text_request(&self,
                     query: &'a str,
                     mut options: HashMap<&'a str, &'a str>)
                     -> Result<Map<String, Value>, Map<String, Value>> {
@@ -29,11 +26,11 @@ impl<'a> Client<'a> {
         options.insert("lang", self.api_lang);
         options.insert("sessionId", self.session_id);
 
-        let mut auth = "Bearer ".to_string();
-        auth.push_str(&self.client_access_token);
+        let auth = self.build_auth_header();
+        let url = self.build_url(options.remove(&"version").unwrap_or("20150910"));
 
         let client = HttpClient::new().unwrap();
-        let mut resp = client.post("https://api.api.ai/v1/query?v=20150910")
+        let mut resp = client.post(&url)
             .json(&options)
             .header(Authorization(auth))
             .send()
@@ -46,6 +43,17 @@ impl<'a> Client<'a> {
         } else {
             Err(body)
         }
+    }
+
+    fn build_url(&self, version: &str) -> String {
+        "https://api.api.ai/v1/query?v=".to_owned() + version
+    }
+
+    fn build_auth_header(&self) -> String {
+        let mut auth = "Bearer ".to_string();
+        auth.push_str(&self.client_access_token);
+
+        return auth;
     }
 }
 
@@ -65,8 +73,6 @@ mod tests {
                 "".to_string()
             }
         };
-
-        // let token : &str = &token.clone();
 
         let client = Client::new(&token, "de", "12");
         let mut hash = HashMap::new();
